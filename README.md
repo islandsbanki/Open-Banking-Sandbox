@@ -1,20 +1,27 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# PSD2 Sandbox Example
+This is a simple example of how to use the PSD2 API provided by Íslandsbanki.
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+The example is written in .Net Core and uses the HttpClient to make requests to the API.
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+## Getting Started
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+### Create a developer account
+To get started you need to create an account with Íslandsbanki.
+Follow the steps and instructions found  [here](https://developer.islandsbanki.is/apiportal/#/home/landing?get-started.htm).
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+
+### Generating an access token
+For the example to run, you need to authorize the client. That can be done with Postman, but detailed instructions can
+be found [here](https://developer.islandsbanki.is/apiportal/#/home/landing?documentation.htm). The result from these
+steps is an access token, that you need to add to the variable called `accessToken` in the `Program.cs` file.
+
+## The flow of the program
+
+The program initiates a payment between two accounts, belonging to the same user (user.0). Information about the test data
+can be found [here](https://developer.islandsbanki.is/apiportal/#/home/landing?documentation.htm) under the tab `Test Data`.
+
+1. Initiate Payment
+2. Get payment information
+3. Get payment status
+4. Authorise payment
+5. Get payment status

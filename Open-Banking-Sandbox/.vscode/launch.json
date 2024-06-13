@@ -1,0 +1,17 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+  {
+    "name" : "Demo app for sandbox",
+    "type": "coreclr",
+    "request": "launch",
+    "program": "${workspaceFolder}/bin/Debug/net6.0/Open-Banking-Sandbox.dll",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT" : "sbox"
+    }
+  }
+  ]
+}
