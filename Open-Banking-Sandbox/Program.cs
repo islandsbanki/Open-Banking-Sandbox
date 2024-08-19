@@ -111,13 +111,12 @@ namespace Islandsbanki.OpenBanking
                         break;
                     case "7":
                         exit = true;
+                        Print("Program exit", ConsoleColor.Red);
                         break;    
                     default:
                         break;
                 }          
             }   
-            
-            Print("Program exit", ConsoleColor.Red);
         }
 
         private static async Task<object> GetAccounts()
@@ -161,12 +160,12 @@ namespace Islandsbanki.OpenBanking
 
             if(initResponse == null)
             {
-                Console.WriteLine("No response. Program exists!");
+                Console.WriteLine("No response. Program exits!");
                 return;
             }    
             else if(paymentStatus == "RJCT")
             {
-                Console.WriteLine($"Initiation failed with status {paymentStatus}. Program exists!");
+                Console.WriteLine($"Initiation failed with status {paymentStatus}. Program exits!");
                 return;
             }
             else if(paymentStatus == "RCVD")
@@ -181,7 +180,7 @@ namespace Islandsbanki.OpenBanking
 
 
             Console.WriteLine();
-            Print("Choose Authentication method or cancel payment (audkenniSim is not supported on Sandbox):");            
+            Print("Choose Authentication method or cancel payment (only audkenniApp is supported in Sandbox):");            
             var authDictionary = new Dictionary<string, string>();
             int authNum = 1;
             Console.WriteLine($"{authNum++} - cancel payment");
@@ -209,8 +208,9 @@ namespace Islandsbanki.OpenBanking
                 return;                 
 
             Console.WriteLine( "Now polling authorisation starts");
+            var status = PollAuthorizationStatus(authResponse["_links"]["scaStatus"]["href"].ToString()).Result;
 
-            if(!PollAuthorizationStatus(authResponse["_links"]["scaStatus"]["href"].ToString()).Result)
+            if( status == "failed" )
                 return;
             
             Console.WriteLine();
@@ -323,7 +323,7 @@ namespace Islandsbanki.OpenBanking
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var responseJson = JObject.Parse(responseContent);
 
-                Print("Payment Authorised Successfully. Response:");
+                Print("Payment authorised successfully. Response:");
                 Print(responseJson.ToString());
 
                 return responseJson;
@@ -340,10 +340,10 @@ namespace Islandsbanki.OpenBanking
             }
         }
 
-        private static async Task<bool> PollAuthorizationStatus(string requestUri)
+        private static async Task<string> PollAuthorizationStatus(string requestUri)
         {
             bool pollAuthStatus = true;
-            bool authIsInFinalState = false;
+            string status = "received";
             JObject authStatusResponse = null;
             Stopwatch timer = new();
             timer.Start();
@@ -362,12 +362,11 @@ namespace Islandsbanki.OpenBanking
                     pollAuthStatus = true;
                 }
 
-                var status = authStatusResponse?["scaStatus"].ToString().ToLower();
+                status = authStatusResponse?["scaStatus"].ToString().ToLower();
 
                 if( status == "failed" || status == "exempted" || status == "finalised")
                 {
                     pollAuthStatus = false;
-                    authIsInFinalState = true;
                 }
             }
 
@@ -376,7 +375,7 @@ namespace Islandsbanki.OpenBanking
             Print( $"Authorization status is {authStatusResponse?["scaStatus"]}" );
             Print(authStatusResponse?.ToString());
 
-            return authIsInFinalState;
+            return status;
         }
 
         private static async Task<JObject> GetAuthorizationStatus(string requestUri)
@@ -560,10 +559,8 @@ namespace Islandsbanki.OpenBanking
                 requestMessage.Headers.Add("PSU-ID","User.0");
                 requestMessage.Headers.Add("PSU-IP-Address", "127.0.0.1");
                 requestMessage.Headers.Add(AppConfig.AuthHeaderName, AccessToken);
-                requestMessage.Headers.Add("PSU-Accept-Language", "en");
+                requestMessage.Headers.Add("PSU-Accept-Language", "is");
                 requestMessage.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-                requestMessage.Headers.Add("X-Audit-Guid", Guid.NewGuid().ToString("N"));
-                requestMessage.Headers.Add("X-System-Id", "IBN");
 
                 if(!string.IsNullOrEmpty(body))
                 {

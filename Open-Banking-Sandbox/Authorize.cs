@@ -76,7 +76,6 @@ namespace Islandsbanki.OpenBanking
             return accessToken;
         }
         
-        ///
         public async Task<string> RefreshAccessToken(string userId)
         {
             if(!RefreshTokenByUserId.TryGetValue(userId, out string refreshToken))
