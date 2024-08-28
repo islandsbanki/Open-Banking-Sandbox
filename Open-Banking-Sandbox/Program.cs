@@ -85,6 +85,9 @@ namespace Islandsbanki.OpenBanking
                 Console.WriteLine("6 - Cancel payment");
                 Console.WriteLine("7 - Exit");
 
+                // For cases 2 through 6, the user will be prompted to enter the payment ID. 
+                // The user can use the payment ID which is returned in the response when initiating a payment (case 1).
+
                 switch (Console.ReadLine())
                 {
                     case "1":
@@ -136,6 +139,18 @@ namespace Islandsbanki.OpenBanking
             return null;
         }
 
+        /// <summary>
+        /// The flow is as follows:
+        /// 1. POST /payments/v2/payments/credit-transfers
+        ///    - Initiates a payment with the specified amount and payment details.
+        /// 1.1 DELETE - Optional - /payments/v2/payments/credit-transfers/{paymentId}
+        ///     - Cancels the payment with the specified payment ID before authorising the payment and sets transaction status to CANC.
+        /// 2. POST /payments/v2/payments/credit-transfers/{paymentId}/authorisations
+        ///    - Authorises the payment with the specified payment ID and authentication method.
+        /// 3. GET /payments/v2/payments/credit-transfers/{paymentId}
+        ///    - Fetches information about the payment with the specified payment ID.
+        /// </summary>
+        /// <param name="amount">The amount to be transferred.</param>
         private static async Task DoCreditTransfer()
         {
             Print("We will now transfer between two accounts.");
@@ -171,6 +186,8 @@ namespace Islandsbanki.OpenBanking
             else if(paymentStatus == "RCVD")
             {
                 Console.WriteLine($"Initiation has status {paymentStatus}. Poll until ready for Authorization");
+                // ACTC - AcceptedTechincalValidation - Authentication and syntactical and semantical validation are successful
+                // ACFC - AcceptedFundsChecked - Preceding check of technical validation and customer profile was successful and an automatic funds check was positive
                 var pollStatusList = new List<string>(){"ACTC", "ACFC", "RJCT"};
                 if(!PollPaymentStatus(initResponse["_links"]["status"]["href"].ToString(), pollStatusList).Result)
                 {
@@ -185,6 +202,12 @@ namespace Islandsbanki.OpenBanking
             int authNum = 1;
             Console.WriteLine($"{authNum++} - cancel payment");
 
+            // Iterate through the available Strong Customer Authentication (SCA) methods and print them to the console
+            // Supported in Sandbox:
+            // -    audkenniApp: SCA method, where a PUSH is sent to audkenni app
+            // Others not supported in Sandbox: 
+            // -    audkenniSim: SCA method, where a PUSH is sent to a mobile phone through sim card electronic identification
+            // -    isbApp: SCA method, where a PUSH is sent to Islandsbanki app
             foreach(var auth in initResponse["scaMethods"])
             {
                 var authId = auth["authenticationMethodId"].ToString();
@@ -215,6 +238,8 @@ namespace Islandsbanki.OpenBanking
             
             Console.WriteLine();
 
+            // ACCC - AcceptedSettlementCompleted - Settlement on the creditor's account has been completed
+            // RJCT - Rejected - Payment initiation or individual transaction included in the payment initiation has been rejected
             var finalStatusList = new List<string>(){"ACCC", "RJCT"};
             if(!PollPaymentStatus(initResponse["_links"]["status"]["href"].ToString(), finalStatusList).Result)
             {
@@ -237,6 +262,14 @@ namespace Islandsbanki.OpenBanking
             Console.WriteLine(message);
         }
 
+        /// <summary>
+        /// Initiates a single payment by sending a POST request with the specified amount and payment details.
+        /// POST - /payments/v2/payments/credit-transfers
+        /// </summary>
+        /// <param name="amount">The amount to be transferred.</param>
+        /// <returns>
+        /// A task containing the JSON response from the payment initiation request
+        /// </returns>
         private static async Task<JObject> InitiatePayment(long amount)
         {
             var request = new
@@ -273,6 +306,7 @@ namespace Islandsbanki.OpenBanking
 
             if (response.IsSuccessStatusCode)
             {
+                // Will return with transaction status either ACFC or ACTC, depending wether fund checks were made
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var responseJson = JObject.Parse(responseContent);
 
@@ -288,12 +322,24 @@ namespace Islandsbanki.OpenBanking
                 var paymentResponse = JsonConvert.DeserializeObject<Hashtable>(responseContent);
 
                 Print("Payment initiation failed with status code: " + response.StatusCode, ConsoleColor.Red);
+                // Tpp message usually contains predefined error information which will be printed for the user to see
+                // This is for example if a customer has insufficient funds, has made an identical payment in a short time or other errors
                 Print(paymentResponse?["tppMessages"]?.ToString());
 
                 return null;
             }           
         }
         
+        /// <summary>
+        /// Starts the authorisation of a payment initiation by sending a POST request with the specified payment ID, request URI, and authentication method ID.
+        /// POST - /payments/v2/payments/credit-transfers/{paymentId}/authorisations/
+        /// </summary>
+        /// <param name="paymentId">The ID of the payment to authorise.</param>
+        /// <param name="requestUri">The URI to send the authorisation request to. If null or empty, a default URI is constructed.</param>
+        /// <param name="authenticationMethodId">The ID of the authentication method to use for authorisation.</param>
+        /// <returns>
+        /// A task containing the JSON response from the payment initiation request
+        /// </returns>
         private static async Task<JObject> AuthorisePayment(string paymentId, string requestUri, string authenticationMethodId)
         {
             var request = new
@@ -320,6 +366,7 @@ namespace Islandsbanki.OpenBanking
 
             if (response.IsSuccessStatusCode)
             {
+                // Returns SCA status Recieved which means the SCA process has started
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var responseJson = JObject.Parse(responseContent);
 
@@ -339,7 +386,14 @@ namespace Islandsbanki.OpenBanking
                 return null;
             }
         }
-
+        
+        /// <summary>
+        /// Polls the authorization status of a request until it reaches a final state or times out.
+        /// </summary>
+        /// <param name="requestUri">The URI of the request to poll for authorization status.</param>
+        /// <returns>
+        /// A task containing the final status of the authorization request (Failed, Exempted or Finalised).
+        ///</returns>
         private static async Task<string> PollAuthorizationStatus(string requestUri)
         {
             bool pollAuthStatus = true;
@@ -352,6 +406,7 @@ namespace Islandsbanki.OpenBanking
 
             while(pollAuthStatus && timer.Elapsed.Seconds < 60) 
             {
+                // Wait for 500ms before polling the authorization status
                 Thread.Sleep(500);
                 Console.Write(".");
 
@@ -362,6 +417,7 @@ namespace Islandsbanki.OpenBanking
                     pollAuthStatus = true;
                 }
 
+                // Update the status based on the response
                 status = authStatusResponse?["scaStatus"].ToString().ToLower();
 
                 if( status == "failed" || status == "exempted" || status == "finalised")
@@ -378,6 +434,14 @@ namespace Islandsbanki.OpenBanking
             return status;
         }
 
+        /// <summary>
+        /// Fetches the SCA status of the payment authorisation.
+        /// GET - /payments/v2/payments/credit-transfers/{paymentId}/authorisations/{authorisationId}
+        /// </summary>
+        /// <param name="requestUri"></param>
+        /// <returns>
+        /// A task containing the JSON response from the payment initiation request
+        /// </returns>
         private static async Task<JObject> GetAuthorizationStatus(string requestUri)
         {
             var response = await SendRequest(Program.Client, HttpMethod.Get, requestUri, "");
@@ -404,6 +468,11 @@ namespace Islandsbanki.OpenBanking
             }
         }
 
+        /// <summary>
+        /// Calls GetPaymentInformationStatus to poll the payment status until it reaches the final state ACCC or RJCT.
+        /// </summary>
+        /// <param name="requestUri"></param>
+        /// <param name="stopPollingStatuses"> Contains transaction statuses ACCC and RJCT </param>
         private static async Task<bool> PollPaymentStatus(string requestUri, List<string> stopPollingStatuses)
         {
             bool pollPaymentStatus = true;
@@ -416,6 +485,7 @@ namespace Islandsbanki.OpenBanking
 
             while(pollPaymentStatus && timer.Elapsed.Seconds < 60) 
             {
+                // Wait for 500ms before polling the payment status
                 Thread.Sleep(500);
                 Console.Write(".");
 
@@ -427,7 +497,7 @@ namespace Islandsbanki.OpenBanking
                 }
 
                 var paymentStatus = statusResponse?["transactionStatus"].ToString().ToUpper();
-                
+                // Either ACCC or RJCT
                 if(stopPollingStatuses.Contains(paymentStatus))
                 {
                     pollPaymentStatus = false;
@@ -442,6 +512,17 @@ namespace Islandsbanki.OpenBanking
             return paymentIsInFinalState;
         }
 
+        /// <summary>
+        /// Fetches the payment information transaction status. For example:
+        /// -   ACTC - AcceptedTechnicalValidation - Authentication and syntactical and semantical validation are successful
+        /// -   ACFC - AcceptedFundsChecked - Preceding check of technical validation and customer profile was successful and an automatic funds check was positive
+        /// -   ACCP - AcceptedCustomerProfile -  Preceding check of technical validation was successful. Customer profile check was also successful
+        /// -   ACSC - AcceptedSettlementCompleted - Settlement on the debtor's account has been completed
+        /// -   PDNG - Payment initiation or individual transaction included in the payment initiation is pending. Further checks and status update will be performed
+        /// GET - /payments/v2/payments/credit-transfers/{paymentId}/status
+        /// </summary>
+        /// <param name="paymentId"></param>
+        /// <param name="requestUri"></param>
         private static async Task<JObject> GetPaymentInformationStatus(string paymentId, string requestUri)
         {
             requestUri = !string.IsNullOrEmpty(requestUri) ? requestUri : $"{AppConfig.PaymentBaseAddress}{InitiationPath}/{paymentId}/status";
@@ -468,7 +549,14 @@ namespace Islandsbanki.OpenBanking
                 return null;
             }
         }
-           
+        
+        /// <summary>
+        /// Fetches the payment information of a request.
+        /// GET - /payments/v2/payments/credit-transfers/{paymentId}
+        /// </summary>
+        /// <param name="paymentId"></param>
+        /// <param name="requestUri"></param>
+        /// <returns></returns>
         private static async Task<HttpResponseMessage> GetPaymentInformation(string paymentId, string requestUri)
         {
             requestUri = !string.IsNullOrEmpty(requestUri) ? requestUri : $"{AppConfig.PaymentBaseAddress}{InitiationPath}/{paymentId}";
@@ -504,6 +592,13 @@ namespace Islandsbanki.OpenBanking
             return null;
         }
 
+        /// <summary>
+        /// Cancels a payment by sending a DELETE request with the specified payment ID.
+        /// DELETE - /payments/v2/payments/credit-transfers/{paymentId}
+        /// </summary>
+        /// <param name="paymentId"></param>
+        /// <param name="requestUri"></param>
+        /// <returns></returns>
         private static async Task CancelPayment(string paymentId, string requestUri)
         {
             requestUri = !string.IsNullOrEmpty(requestUri) ? requestUri : $"{AppConfig.PaymentBaseAddress}{InitiationPath}/{paymentId}";
@@ -520,6 +615,7 @@ namespace Islandsbanki.OpenBanking
 
             if (response.IsSuccessStatusCode)
             {
+                // Cancellation is successful and payment transaction status should now be CANC - Cancelled
                 Print($"Payment has been canceled, with status code 204-{response.StatusCode}");                    
             }
             else
@@ -528,6 +624,13 @@ namespace Islandsbanki.OpenBanking
             }
         }
 
+        /// <summary>
+        /// Sends a request to the specified URI with the specified body. 
+        /// </summary>
+        /// <param name="Client"></param>
+        /// <param name="httpMethod"></param>
+        /// <param name="requestUri"></param>
+        /// <param name="body"></param>
         private static async Task<HttpResponseMessage> SendRequest(HttpClient Client, HttpMethod httpMethod, string requestUri, string body)
         {
             var headersToSign = new StringBuilder();
