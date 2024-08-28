@@ -26,11 +26,11 @@ can be found [here](https://developer.islandsbanki.is/apiportal/#/home/landing?d
 4. Authorise payment
 5. Get payment status
 
-## Test data for payment-card-deposits 
+## Test data for payment product: payment-card-deposits 
 
 - MaskedPan: 1234********1111
 - CreditorId: 0607681459
 
-## Test data for claim-payments
+## Test data for payment product: claim-payments
 
 - Bban: 2005851439053566000400+240625
