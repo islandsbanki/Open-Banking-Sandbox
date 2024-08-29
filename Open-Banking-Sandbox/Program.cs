@@ -85,8 +85,8 @@ namespace Islandsbanki.OpenBanking
                 Console.WriteLine("6 - Cancel payment");
                 Console.WriteLine("7 - Exit");
 
-                // For cases 2 through 6, the user will be prompted to enter the payment ID. 
-                // The user can use the payment ID which is returned in the response when initiating a payment (case 1).
+                // For cases 3 through 6, the user will be prompted to enter the payment ID. 
+                // The user can use the payment ID which is returned in the response when initiating a payment (case 2).
 
                 switch (Console.ReadLine())
                 {
