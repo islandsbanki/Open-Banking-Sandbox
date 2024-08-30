@@ -28,8 +28,8 @@ can be found [here](https://developer.islandsbanki.is/apiportal/#/home/landing?d
 
 ## Test data for payment product: payment-card-deposits 
 
-- Pan: 1234123412341111
-- MaskedPan: 1234********1111
+- Pan: 1234
+- MaskedPan: 123412******1111
 - CreditorId: 0607681459
 
 ## Test data for payment product: claim-payments
