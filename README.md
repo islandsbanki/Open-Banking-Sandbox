@@ -28,11 +28,11 @@ can be found [here](https://developer.islandsbanki.is/apiportal/#/home/landing?d
 
 ## Test data for payment product: payment-card-deposits 
 
-- Pan: 1234
-- MaskedPan: 123412******1111
+- Pan: 1234567
+- MaskedPan: 123412******2222
 - CreditorId: 0607681459
 
 ## Test data for payment product: claim-payments
 
-- Bban: 2005851439053566000400+240625
 - Bban: 2005851439053566000401+240625
+- Bban: 2005851439053566000400+240625
