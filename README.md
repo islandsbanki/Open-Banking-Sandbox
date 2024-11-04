@@ -26,7 +26,7 @@ can be found [here](https://developer.islandsbanki.is/apiportal/#/home/landing?d
 4. Authorise payment
 5. Get payment status
 
-## Test data for payment product: payment-card-deposits 
+## Test data for payment product: card-deposits 
 
 - Pan: 1234567
 - MaskedPan: 123412******2222
