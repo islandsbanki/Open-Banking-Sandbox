@@ -8,9 +8,16 @@
     "name" : "Demo app for sandbox",
     "type": "coreclr",
     "request": "launch",
-    "program": "${workspaceFolder}/bin/Debug/net6.0/Open-Banking-Sandbox.dll",
-      "env": {
-        "ASPNETCORE_ENVIRONMENT" : "sbox"
+    "program": "${workspaceFolder}/bin/Debug/net8.0/Open-Banking-Sandbox.dll",
+    "args": [],
+    "cwd": "${workspaceFolder}",
+    "stopAtEntry": false,
+    "serverReadyAction": {
+      "action": "openExternally",
+      "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+    },
+    "env": {
+      "ASPNETCORE_ENVIRONMENT" : "sbox"
     }
   }
   ]

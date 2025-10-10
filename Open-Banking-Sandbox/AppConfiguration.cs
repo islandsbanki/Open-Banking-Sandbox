@@ -18,5 +18,6 @@ namespace Islandsbanki.OpenBanking
     public string QwacCertPassword {get; set;}
     public string QsealPem {get; set;}
     public string QsealKey {get; set;}
+    public string PSUIPAddress {get; set;}
   }
 }

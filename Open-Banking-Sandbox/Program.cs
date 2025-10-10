@@ -660,7 +660,7 @@ namespace Islandsbanki.OpenBanking
                 requestMessage.Headers.Add("Signature", $"keyId={keyId},algorithm=\"rsa-sha256\",headers=\"X-Request-Id Date Digest\",signature=\"{signature}\"");
                 requestMessage.Headers.Add("TPP-Signature-Certificate", encodedQseal);
                 requestMessage.Headers.Add("PSU-ID","User.0");
-                requestMessage.Headers.Add("PSU-IP-Address", "127.0.0.1");
+                requestMessage.Headers.Add("PSU-IP-Address", AppConfig.PSUIPAddress);
                 requestMessage.Headers.Add(AppConfig.AuthHeaderName, AccessToken);
                 requestMessage.Headers.Add("PSU-Accept-Language", "is");
                 requestMessage.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
