@@ -55,7 +55,7 @@ namespace Islandsbanki.OpenBanking
 
             Authorize = new Authorize(AppConfig);
 
-            X509Certificate2 certificate = new X509Certificate2(AppConfig.QwacCertName, AppConfig.QwacCertPassword);
+            X509Certificate2 certificate = X509CertificateLoader.LoadPkcs12FromFile(AppConfig.QwacCertName, AppConfig.QwacCertPassword);
             HttpClientHandler handler = new ();
             handler.ClientCertificates.Add(certificate);
             Client = new HttpClient(handler)
